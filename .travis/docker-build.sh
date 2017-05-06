@@ -22,7 +22,7 @@ export TARGETS="\
 
 for target in $TARGETS; do
   cd /react-hs/$target
-  stack build --allow-different-user --fast --pedantic --test --flag react-hs:test-client
+  stack build --allow-different-user --fast --pedantic --test
 done
 
 # run react-hs test suite

@@ -28,7 +28,7 @@ source-repository head
 
 Flag test-client
     Description: Build the test client application
-    Default: False
+    Default: True
 
 library
   hs-source-dirs:      src
