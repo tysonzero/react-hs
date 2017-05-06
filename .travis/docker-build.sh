@@ -22,7 +22,7 @@ export TARGETS="\
 
 for target in $TARGETS; do
   cd /react-hs/$target
-  stack build --allow-different-user --fast --pedantic --test
+  stack build --allow-different-user --fast --pedantic --test --flag react-hs:test-client
 done
 
 # run react-hs test suite
@@ -31,5 +31,4 @@ make
 cd test/client
 npm install
 cd ../spec
-# See https://github.com/liqula/react-hs/issues/11.
-# stack exec -- react-hs-spec
+stack exec -- react-hs-spec
