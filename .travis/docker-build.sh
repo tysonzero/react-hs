@@ -23,7 +23,7 @@ for target in $TARGETS; do
 done
 
 # start selenium
-./selenium.sh start
+cd /react-hs/.travis && ./selenium.sh start
 
 # run react-hs test suite
 cd /react-hs/react-hs
