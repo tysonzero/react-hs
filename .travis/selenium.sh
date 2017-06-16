@@ -2,7 +2,9 @@
 
 set -e
 
-export SEL=/selenium-server-standalone-3.4.0.jar
+export PATH=$PATH:/usr/lib/chromium-browser
+export SEL=/selenium-server-standalone-2.53.1.jar
+# If you want to update selenium-grid, check out https://github.com/liqula/react-hs-docker/blob/master/Dockerfile.
 export SELENIUM_HOST=localhost
 export SELENIUM_HUB_PORT=4444
 export SELENIUM_NODE_PORT=5555
@@ -11,8 +13,8 @@ export DISPLAY=:1
 export VNC_PORT=5900
 export VNC_DIMS=800x600x8
 
-export SELENIUM_HUB_ARGS=
-#export SELENIUM_NODE_ARGS=-Dwebdriver.chrome.driver=/usr/lib/chromium-browser/chromedriver
+export SELENIUM_HUB_ARGS=-debug
+# (try `java -jar /selenium-server-standalone-2.53.1.jar [-role <node|hub>] -h` to learn more.)
 
 case "$1" in
   start)

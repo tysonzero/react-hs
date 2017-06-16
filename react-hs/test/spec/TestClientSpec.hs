@@ -11,6 +11,7 @@ import           Data.Time
 import qualified Data.Text              as T
 import           System.Directory       (getCurrentDirectory)
 import           Test.Hspec.WebDriver
+import           Test.WebDriver.Capabilities
 
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show
@@ -136,7 +137,7 @@ spec = do
   testClientSpec "test-client-min.html"
 
 allBrowsers :: [Capabilities]
-allBrowsers = [chromeCaps]
+allBrowsers = [defaultCaps, chromeCaps]
 
 testClientSpec :: String -> Spec
 testClientSpec filename = session (" for the test client " ++ filename) $ using allBrowsers $ do
