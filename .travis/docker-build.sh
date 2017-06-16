@@ -8,9 +8,6 @@ if [ -e ./tweak-container.sh ]; then
     ./tweak-container.sh
 fi
 
-# start selenium
-./selenium.sh start
-
 # build everything
 export TARGETS="\
   react-hs \
@@ -24,6 +21,9 @@ for target in $TARGETS; do
   cd /react-hs/$target
   stack build --allow-different-user --fast --pedantic --test
 done
+
+# start selenium
+./selenium.sh start
 
 # run react-hs test suite
 cd /react-hs/react-hs
