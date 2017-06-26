@@ -320,7 +320,7 @@ type LSetStateFn state = state -> IO ()
 -- events.  As mentioned above, care must be taken in each callback to write only IO that will not
 -- block.
 data LifecycleViewConfig props state = LifecycleViewConfig
-  { lRender :: state -> props -> ReactElementM (StatefulEventHandlerCode state) ()
+  { lRender :: state -> props -> ReactElementM ('StatefulEventHandlerCode state) ()
   , lComponentWillMount :: Maybe (LPropsAndState props state -> LSetStateFn state -> IO ())
   , lComponentDidMount :: Maybe (LPropsAndState props state -> LDOM -> LSetStateFn state -> IO ())
   -- | Receives the new props as an argument.
