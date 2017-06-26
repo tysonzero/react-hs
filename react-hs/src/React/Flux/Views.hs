@@ -47,7 +47,7 @@ import qualified JavaScript.Array as JSA
 
 newtype View (props :: [*]) = View (ReactViewRef ())
 
-type family ViewPropsToElement (props :: [*]) (handler :: EHandler *) where
+type family ViewPropsToElement (props :: [*]) (handler :: EventHandlerCode *) where
   ViewPropsToElement '[] handler = ReactElementM handler ()
   ViewPropsToElement (a ': rest) handler = a -> ViewPropsToElement rest handler
 
@@ -66,20 +66,20 @@ type ViewEventHandler = [SomeStoreAction]
 -- instead use the state passed directly to the handler.
 type StatefulViewEventHandler state = state -> ([SomeStoreAction], Maybe state)
 
--- FIXME: make TEH closed
-type instance TEH 'EHView = ViewEventHandler
-type instance TEH ('EHState a) = StatefulViewEventHandler a
+-- FIXME: make EventHandlerType closed
+type instance EventHandlerType 'EventHandlerCode = ViewEventHandler
+type instance EventHandlerType ('StatefulEventHandlerCode a) = StatefulViewEventHandler a
 
 -- | Change the event handler from 'ViewEventHandler' to 'StatefulViewEventHandler' to allow you to embed
 -- combinators with 'ViewEventHandler's into a stateful view.  Each such lifted handler makes no change to
 -- the state.
-liftViewToStateHandler :: ReactElementM 'EHView a -> ReactElementM ('EHState st) a
+liftViewToStateHandler :: ReactElementM 'EventHandlerCode a -> ReactElementM ('StatefulEventHandlerCode st) a
 liftViewToStateHandler = transHandler (\h _ -> (h, Nothing))
 
 class HasField (x :: k) r a | x r -> a where
   getField :: r -> a
 
-type family ControllerViewToElement (stores :: [*]) (props :: [*]) (handler :: EHandler *) where
+type family ControllerViewToElement (stores :: [*]) (props :: [*]) (handler :: EventHandlerCode *) where
   ControllerViewToElement '[] props handler = ViewPropsToElement props handler
   ControllerViewToElement (StoreArg store ': rest) props handler = store -> ControllerViewToElement rest props handler
   ControllerViewToElement (StoreField store field a ': rest) props handler = a -> ControllerViewToElement rest props handler
@@ -88,7 +88,7 @@ type family ControllerViewToElement (stores :: [*]) (props :: [*]) (handler :: E
 -- View Props Classes
 --------------------------------------------------------------------------------
 
-class ViewProps (props :: [*]) (handler :: EHandler *) where
+class ViewProps (props :: [*]) (handler :: EventHandlerCode *) where
   viewPropsToJs :: ReactViewRef () -> JSString -> (NewJsProps -> IO ()) -> ViewPropsToElement props handler
   applyViewPropsFromJs :: ViewPropsToElement props handler -> NewJsProps -> Int -> IO (ReactElementM handler ())
 
@@ -134,7 +134,7 @@ data StoreToState = StoreState Int
                     , storeToStateCallback :: IO (Callback (JSVal -> IO ()))
                     }
 
-class ControllerViewStores (stores :: [*]) props (handler :: EHandler *) where
+class ControllerViewStores (stores :: [*]) props (handler :: EventHandlerCode *) where
   applyControllerViewFromJs :: ViewProps props handler
                             => ControllerViewToElement stores props handler
                             -> JsState
@@ -195,14 +195,14 @@ view_ :: forall props handler. ViewProps (props :: [*]) handler
     => View props -> JSString -> ViewPropsToElement props handler
 view_ (View ref) key = viewPropsToJs @props @handler ref key (const $ return ())
 
-mkView :: forall (props :: [*]). (ViewProps props 'EHView, Typeable props, AllEq props)
-    => JSString -> ViewPropsToElement props 'EHView -> View props
+mkView :: forall (props :: [*]). (ViewProps props 'EventHandlerCode, Typeable props, AllEq props)
+    => JSString -> ViewPropsToElement props 'EventHandlerCode -> View props
 mkView name buildNode = unsafePerformIO $ do
   renderCb <- syncCallback2 ContinueAsync $ \thisRef argRef -> do
     let this = ReactThis thisRef
         arg = RenderCbArg argRef
     props <- js_PropsList this
-    node <- applyViewPropsFromJs @props @'EHView buildNode props 0
+    node <- applyViewPropsFromJs @props @'EventHandlerCode buildNode props 0
     (element, evtCallbacks) <- mkReactElement (runViewHandler this) this node
     evtCallbacksRef <- toJSVal evtCallbacks
     js_RenderCbSetResults arg evtCallbacksRef element
@@ -213,10 +213,10 @@ mkView name buildNode = unsafePerformIO $ do
 
 mkStatefulView :: forall (state :: *) (props :: [*]).
                   (Typeable state, NFData state, Typeable state, Eq state,
-                   ViewProps props ('EHState state), Typeable props, AllEq props)
+                   ViewProps props ('StatefulEventHandlerCode state), Typeable props, AllEq props)
                => JSString -- ^ A name for this view, used only for debugging/console logging
                -> state -- ^ The initial state
-               -> (state -> ViewPropsToElement props ('EHState state))
+               -> (state -> ViewPropsToElement props ('StatefulEventHandlerCode state))
                -> View props
 mkStatefulView name initial buildNode = unsafePerformIO $ do
   initialRef <- export initial
@@ -236,9 +236,9 @@ mkStatefulView name initial buildNode = unsafePerformIO $ do
 {-# NOINLINE mkStatefulView #-}
 
 mkControllerView :: forall (stores :: [*]) (props :: [*]).
-                    (ControllerViewStores stores props 'EHView, Typeable stores, AllEq stores,
-                     ViewProps props 'EHView, Typeable props, AllEq props)
-                 => JSString -> ControllerViewToElement stores props 'EHView -> View props
+                    (ControllerViewStores stores props 'EventHandlerCode, Typeable stores, AllEq stores,
+                     ViewProps props 'EventHandlerCode, Typeable props, AllEq props)
+                 => JSString -> ControllerViewToElement stores props 'EventHandlerCode -> View props
 mkControllerView name buildNode = unsafePerformIO $ do
   renderCb <- syncCallback2 ContinueAsync $ \thisRef argRef -> do
     let this = ReactThis thisRef
@@ -261,7 +261,7 @@ mkControllerView name buildNode = unsafePerformIO $ do
   -- ToJSVal instance.
 
   artifacts <- js_emptyArtifacts
-  forM_ (M.toList $ stateForView @stores @props @'EHView 0) $ \(ty, states) -> do
+  forM_ (M.toList $ stateForView @stores @props @'EventHandlerCode 0) $ \(ty, states) -> do
     art <- js_newArtifact
     forM_ states $ \s -> do
       case s of
