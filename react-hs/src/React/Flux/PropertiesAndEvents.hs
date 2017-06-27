@@ -656,8 +656,10 @@ foreign import javascript unsafe
 --
 -- See https://facebook.github.io/react/docs/events.html,
 -- https://github.com/liqula/react-hs/issues/2 for more details.
+--
+-- FIXME: Sometimes eventhandlers in Draft do not give us an react event?
 foreign import javascript unsafe
-  "$1.persist()"
+  "if ($1['persist']) {$1.persist();} else {console.log('WARNING: persist failed on ', typeof($1), $1);}"
   js_persistReactEvent :: HandlerArg -> IO ()
 
 #else
